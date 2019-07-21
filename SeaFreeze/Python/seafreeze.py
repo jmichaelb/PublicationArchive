@@ -83,11 +83,11 @@ def _get_shear_mod_GPa(sm, rho, T):
 
 
 def _get_Vp(smg, rho, Ks):
-    return 1e3 * sqrt((Ks/1e3 + 4/3*smg)/rho/1e-3)
+    return 1e3 * np.sqrt((Ks/1e3 + 4/3*smg)/rho/1e-3)
 
 
 def _get_Vs(smg, rho):
-    return 1e3 * sqrt(smg/rho/1e-3)
+    return 1e3 * np.sqrt(smg/rho/1e-3)
 
 
 def _is_scatter(PT):
