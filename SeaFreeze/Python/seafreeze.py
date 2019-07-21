@@ -4,15 +4,20 @@ import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
 
-def get_phase_thermodynamics(phase, PT=None, path="../SeaFreeze_Gibbs.mat"):
+def get_phase_thermodynamics(phase, PT=None, path='../SeaFreeze_Gibbs.mat'):
     """ Calculates the following thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, and VI
             for all phases:
                 - rho (density, in kg/m³)
                 - Ks (isentropic bulk modulus, in MPa)
+                - Kt (isothermal bulk modulus, in MPa)
+                - Kp (pressure derivative of isothermal bulk modulus, dimensionless)
                 - G (Gibbs energy, in J/kg)
                 - S (entropy, in J/kg·K)
+                - H (Helmholtz energy, in J/kg)
+                - U (internal energy, in J/kg)
                 - Cp (isobaric specific heat, in J/kg·K)
                 - Cv (isochoric specific heat, in J/kg·K)
+                - alpha (thermal expansivity, in K⁻¹)
             for solid phases only:
                 - Vp (compressional wave velocity, in m/s)
                 - Vs (shear wave velocity, in m/s)
@@ -54,11 +59,11 @@ def get_phase_thermodynamics(phase, PT=None, path="../SeaFreeze_Gibbs.mat"):
     # calc density and isentropic bulk modulus
     isscatter = _is_scatter(PT)
     tdvs = _get_tdvs(sp, PT, isscatter)
-    if phasedesc.shear_mod:
-        smg = _get_shear_mod_GPa(phasedesc.shear_mod, tdvs.rho, _get_T(PT, isscatter))
+    if phasedesc.shear_mod_parms:
+        smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, tdvs.rho, _get_T(PT, isscatter))
         tdvs.shear = 1e3 * smg  # convert to MPa for consistency with other measures
-        tdvs.Vp = 1e3 * sqrt((tdvs.Ks/1e3 + 4/3*smg)/tdvs.rho/1e-3)
-        tdvs.Vs = 1e3 * sqrt(smg/tdvs.rho/1e-3)
+        tdvs.Vp = _get_Vp(smg, tdvs.rho, tdvs.Ks)
+        tdvs.Vs = _get_Vs(smg, tdvs.rho)
     return tdvs
 
 
@@ -70,15 +75,23 @@ def _get_tdvs(sp, PT, is_scatter):
     :return:    tdv object
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
-    return fn(sp, PT, 'rho', 'Ks', 'G', 'S', 'Cp', 'Cv', failOnExtrapolate=False)
+    return fn(sp, PT, 'rho', 'Ks', 'Kt', 'Kp', 'G', 'S', 'H', 'U', 'Cp', 'Cv', 'alpha', failOnExtrapolate=False)
 
 
 def _get_shear_mod_GPa(sm, rho, T):
     return None if sm is None else sm[0] + sm[1]*(rho - sm[4]) + sm[2]*(rho-sm[4])**2 + sm[3]*(T-sm[5])
 
 
+def _get_Vp(smg, rho, Ks):
+    return 1e3 * sqrt((Ks/1e3 + 4/3*smg)/rho/1e-3)
+
+
+def _get_Vs(smg, rho):
+    return 1e3 * sqrt(smg/rho/1e-3)
+
+
 def _is_scatter(PT):
-    return isinstance(PT[0], tuple)
+    return isinstance(PT[0], tuple) or (PT.shape == (1,2) and np.isscalar(PT[0]) and np.isscalar(PT[1]))
 
 
 def _get_T(PT, is_scatter):
@@ -88,7 +101,7 @@ def _get_T(PT, is_scatter):
 #########################################
 ## Constants
 #########################################
-PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod')
+PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms')
 phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]),  # Feistel and Wagner, 2006
           "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273]),       # Journaux et al, 2019
           "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273]),           # Journaux et al, 2019
