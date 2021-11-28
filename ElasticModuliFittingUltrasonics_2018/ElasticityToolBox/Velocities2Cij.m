@@ -705,7 +705,7 @@ function checkinput
         end
         [nc,nr]=size(ea);
         ns=InputStrct.Data.nsamp;
-        if (InputStrct.Data.dcosflg==0 && (nc~=3 || nr~=ns))
+        if (InputStrct.Data.dcosflg==0 && (nr~=3 || nc~=ns))
             error('Eulerangle input needs to be 3 x # of samples matrix')
         end
         if not(strcmp(Refine_ea(1),'y') ||strcmp(Refine_ea(1),'n') ||...
