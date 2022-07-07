@@ -18,6 +18,7 @@ function [Cout,eaout,ResultsStrct,Ctemp]=...
 %          University of Washington
 %          brown@ess.washington.edu             7/2013
 
+DataSource='SurfaceWaves'; % Need to initialize
 if nargin==6
    iter_disp=1;
    checkinput;  %(InputStrct,Cin,Refine_Cij,ea,Refine_ea,Method);
