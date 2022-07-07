@@ -177,6 +177,7 @@ if strcmp(DataSource, 'BodyWaves')
 elseif strcmp(DataSource, 'SurfaceWaves')
     [~,sigdat_sw,~,comp,dcomp]=Data2matrixSW(InputStrct,ifit);
 end
+ea=eaout; %reset the euler angles for further calculations
 time=toc;
 end
 
